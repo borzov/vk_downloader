@@ -26,9 +26,13 @@ monolith without tests.
 ## 2. Decisions (user-selected)
 
 - **Q1 = A** — Target is PHOTOS (album downloader), not video. "Video" was a slip.
-- **Q2 = C** — HYBRID data source: official VK API primary, scraping fallback.
-- **Q3 = B** — MODERATE refactor: extract 4-5 modules, add API branch + tests on
-  key nodes. No total rewrite.
+- **Q2 = C, token-free priority** — HYBRID, but PRIMARY path is token-free
+  scraping. User will NOT create a VK access token. Official VK API requires a
+  token, so the API branch is OPTIONAL: used only if `VK_ACCESS_TOKEN` is present
+  in env, otherwise silently skipped. The downloader MUST work fully with no token.
+- **Q3 = B** — MODERATE refactor: extract 4-5 modules, add optional API branch +
+  tests on key nodes. No total rewrite.
+- **Private albums = OUT OF SCOPE** — public albums only (no token, no auth).
 
 ## 3. Architecture (moderate refactor)
 
@@ -56,18 +60,26 @@ tests/
 - Drop the always-404 "base URL without params" first candidate.
 - Pick the **largest** size from `as` list, build the correct `cs` param to
   request the true maximum, then descend on 404.
-- API path bypasses this entirely: VK returns labeled sizes (w,z,y,x...) with
-  direct URLs — pick highest available.
+- API path (optional, token-only) bypasses this entirely: VK returns labeled
+  sizes (w,z,y,x...) with direct URLs — pick highest available.
 
-### 3.2 Hybrid flow
+Since the token-free path is primary, the scraper quality fix is the MOST
+important deliverable, not the API branch.
+
+### 3.2 Hybrid flow (token-free by default)
 
 ```
-if VK_ACCESS_TOKEN present:
-    try API (photos.get) -> sized URLs       # robust, handles accessible private albums
-    on API failure/no-token -> fall back to scraper
-else:
-    scraper path (public albums only)
+PRIMARY: improved scraper path (public albums, NO token required)
+
+OPTIONAL acceleration:
+if VK_ACCESS_TOKEN present in env:
+    try API (photos.get) -> sized URLs        # robustness bonus only
+    on any API failure -> fall back to scraper
+# no token -> scraper is the full, supported path (must work end-to-end)
 ```
+
+Design priority: the product is complete and correct WITHOUT a token. The API
+branch is an additive optimization, never a requirement.
 
 ### 3.3 Resilience (new)
 
@@ -100,4 +112,6 @@ threaded downloader (retry, dedup) -> album folder.
 ## 8. Out of scope (YAGNI)
 
 - Video download (explicitly deferred — separate future module if ever needed).
+- Private/closed albums and any VK authentication/login flow.
+- Making a VK access token mandatory (token is optional-only).
 - GUI, scheduling, cloud upload.
