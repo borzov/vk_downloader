@@ -6,7 +6,7 @@
 
 **Architecture:** Token-free scraping (HTML + AJAX) is the primary, complete path. An optional `api_client` is used only when `VK_ACCESS_TOKEN` is set, falling back to the scraper on any failure. A thin `vk_downloader.py` CLI dispatches single/batch modes. Each module has one responsibility and its own tests.
 
-**Tech Stack:** Python 3.8+, `requests`, `beautifulsoup4`, `pytest` (+ `responses` for mocked HTTP). Runner: `uv` (`/opt/homebrew/bin/uv`).
+**Tech Stack:** Python 3.10+ (PEP 604 `X | None` syntax used throughout), `requests`, `beautifulsoup4`, `pytest` (+ `responses` for mocked HTTP). Runner: `uv` (`/opt/homebrew/bin/uv`).
 
 ## Global Constraints
 

@@ -2,7 +2,7 @@
 name = "vk-album-downloader"
 version = "0.1.0"
 description = "Download photos from VK albums"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "requests>=2.31.0",
     "beautifulsoup4>=4.12.0",
