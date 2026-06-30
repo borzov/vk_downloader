@@ -1,16 +1,10 @@
 """Token-free album scraping: HTML parse + AJAX pagination."""
 import json
 import time
-from dataclasses import dataclass
 from bs4 import BeautifulSoup
+from .models import Photo
 from .quality import extract_quality_urls
 from .config import HEADERS, DownloadConfig
-
-
-@dataclass(frozen=True)
-class Photo:
-    id: str
-    urls: list
 
 
 def parse_photos(html: str) -> list:

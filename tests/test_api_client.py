@@ -1,14 +1,4 @@
-from vkdl.api_client import parse_owner_album, photos_to_models
-
-def test_parse_owner_album_negative_owner():
-    owner, album = parse_owner_album("https://vk.com/album-18515186_240802273")
-    assert owner == "-18515186"
-    assert album == "240802273"
-
-def test_parse_owner_album_positive_owner():
-    owner, album = parse_owner_album("https://vk.com/album12345_67890")
-    assert owner == "12345"
-    assert album == "67890"
+from vkdl.api_client import photos_to_models
 
 def test_photos_to_models_picks_largest():
     api = {"response": {"items": [

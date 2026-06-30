@@ -4,21 +4,19 @@ Usage:
   uv run vk_downloader.py <album_url> [threads]
   uv run vk_downloader.py --batch <csv> [threads]
 """
-import re
 import sys
 import time
 from pathlib import Path
 import requests
 from vkdl.config import HEADERS, DownloadConfig, get_access_token, MAX_WORKERS_LIMIT
+from vkdl.album_ref import is_album_url
 from vkdl.resolver import resolve_album
 from vkdl.downloader import download_all, sanitize_filename
 from vkdl.batch import parse_csv
 
-_URL_RE = re.compile(r"https?://vk\.com/album-?\d+_\d+")
-
 
 def validate_url(url: str) -> bool:
-    return bool(_URL_RE.match(url))
+    return is_album_url(url)
 
 
 def run_single(album_url: str, max_workers: int, custom_title: str = None) -> bool:

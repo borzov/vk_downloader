@@ -1,8 +1,9 @@
 from pathlib import Path
 import responses
 import requests
-from vkdl.downloader import sanitize_filename, file_sha256, download_photo
-from vkdl.scraper import Photo
+from vkdl.downloader import sanitize_filename, download_photo, download_all
+from vkdl.dedup import file_sha256
+from vkdl.models import Photo
 from vkdl.config import DownloadConfig
 
 
@@ -65,3 +66,18 @@ def test_download_photo_falls_to_next_url_on_network_error(tmp_path):
     res = download_photo(photo, 1, tmp_path, s, DownloadConfig(retries=1, backoff_base=0))
     assert res["status"] == "success"
     assert (tmp_path / res["filename"]).read_bytes() == b"SMALL"
+
+
+@responses.activate
+def test_download_all_dedupes_identical_content(tmp_path):
+    # two distinct photos whose bytes are identical -> one success, one duplicate
+    responses.add(responses.GET, "https://s/a.jpg", body=b"SAME", status=200)
+    responses.add(responses.GET, "https://s/b.jpg", body=b"SAME", status=200)
+    photos = [
+        Photo(id="1_1", urls=["https://s/a.jpg?as=10x10&cs=10x0"]),
+        Photo(id="1_2", urls=["https://s/b.jpg?as=10x10&cs=10x0"]),
+    ]
+    s = requests.Session()
+    counters = download_all(photos, tmp_path, s, DownloadConfig(max_workers=1, retries=1))
+    assert counters["success"] == 1
+    assert counters["duplicate"] == 1
