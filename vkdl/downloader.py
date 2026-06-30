@@ -53,6 +53,7 @@ def download_photo(photo, idx: int, album_dir: Path, session, cfg: DownloadConfi
     if filepath.exists():
         return {"status": "skipped", "idx": idx, "filename": filename}
 
+    last_error = "all URLs failed"
     for url in photo.urls:
         try:
             r = _get_with_retry(session, url, cfg)
@@ -71,8 +72,10 @@ def download_photo(photo, idx: int, album_dir: Path, session, cfg: DownloadConfi
             tmp.rename(filepath)
             return {"status": "success", "idx": idx, "filename": filename}
         except requests.RequestException as e:
-            return {"status": "error", "idx": idx, "filename": filename, "error": str(e)}
-    return {"status": "error", "idx": idx, "filename": filename, "error": "all URLs failed"}
+            # network failure on this URL: remember it and try the next size
+            last_error = str(e)
+            continue
+    return {"status": "error", "idx": idx, "filename": filename, "error": last_error}
 
 
 def download_all(photos, album_dir: Path, session, cfg: DownloadConfig) -> dict:

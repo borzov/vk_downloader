@@ -50,3 +50,18 @@ def test_download_photo_falls_to_next_url_on_404(tmp_path):
     s = requests.Session()
     res = download_photo(photo, 1, tmp_path, s, DownloadConfig(retries=1))
     assert res["status"] == "success"
+
+
+@responses.activate
+def test_download_photo_falls_to_next_url_on_network_error(tmp_path):
+    # first URL raises a connection error on every retry; second URL succeeds
+    big = "https://big/p.jpg?as=99x99&cs=99x0"
+    small = "https://small/p.jpg?as=10x10&cs=10x0"
+    responses.add(responses.GET, "https://big/p.jpg",
+                  body=requests.exceptions.ConnectionError("boom"))
+    responses.add(responses.GET, "https://small/p.jpg", body=b"SMALL", status=200)
+    photo = Photo(id="1_2", urls=[big, small])
+    s = requests.Session()
+    res = download_photo(photo, 1, tmp_path, s, DownloadConfig(retries=1, backoff_base=0))
+    assert res["status"] == "success"
+    assert (tmp_path / res["filename"]).read_bytes() == b"SMALL"
