@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# uv
+uv.lock
+
+# Superpowers SDD scratch (ledger, briefs, review packages)
+.superpowers/
+
+# Downloaded albums (local output)
+/*/
+!vkdl/
+!tests/
+!docs/
+!.github/
