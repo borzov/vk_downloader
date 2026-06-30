@@ -25,7 +25,11 @@ def run_single(album_url: str, max_workers: int, custom_title: str = None) -> bo
     session = requests.Session()
     cfg = DownloadConfig(max_workers=max_workers)
     token = get_access_token()
-    photos, title = resolve_album(album_url, session, cfg, token=token)
+    try:
+        photos, title = resolve_album(album_url, session, cfg, token=token)
+    except requests.RequestException as e:
+        print(f"❌ Сетевая ошибка при загрузке альбома: {e}")
+        return False
     if not photos:
         print("❌ Фотографии не найдены (альбом закрыт или пуст).")
         return False

@@ -23,3 +23,14 @@ def test_main_no_args_returns_error_code():
 
 def test_main_bad_url_returns_error_code():
     assert cli.main(["https://vk.com/video-1_2"]) == 1
+
+
+def test_run_single_handles_network_error(monkeypatch):
+    import requests
+
+    def boom(*args, **kwargs):
+        raise requests.exceptions.ConnectionError("network down")
+
+    monkeypatch.setattr(cli, "resolve_album", boom)
+    # must return False gracefully, not raise a traceback
+    assert cli.run_single("https://vk.com/album-1_2", 5) is False
