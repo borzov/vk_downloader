@@ -2,7 +2,7 @@
 import json
 import time
 from bs4 import BeautifulSoup
-from .models import Photo
+from .models import Album, Photo
 from .quality import extract_quality_urls
 from .config import DownloadConfig
 from .http import get as http_get, post as http_post
@@ -47,7 +47,8 @@ def extract_ajax_html(ajax_json_text: str) -> str | None:
     return None
 
 
-def scrape_album(album_url: str, session, cfg: DownloadConfig = DownloadConfig()) -> tuple:
+def scrape_album(album_url: str, session,
+                 cfg: DownloadConfig = DownloadConfig()):
     resp = http_get(session, album_url, cfg)
     title, total = parse_album_meta(resp.text)
     photos = list(parse_photos(resp.text))
@@ -68,4 +69,6 @@ def scrape_album(album_url: str, session, cfg: DownloadConfig = DownloadConfig()
         photos.extend(new)
         offset = len(photos)
         time.sleep(cfg.rate_limit_delay)
-    return photos, title
+    if not photos:
+        return None
+    return Album(photos=photos, title=title, source="scraper")

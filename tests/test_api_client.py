@@ -28,6 +28,24 @@ def test_photos_to_models_empty():
 
 
 @responses.activate
+def test_fetch_album_returns_album_from_api():
+    body = json.dumps({"response": {"items": [
+        {"id": 2, "owner_id": -1, "sizes": [
+            {"type": "w", "url": "u_w", "width": 2560, "height": 1920},
+            {"type": "m", "url": "u_m", "width": 130, "height": 100},
+        ]},
+    ]}})
+    responses.add(responses.GET, API_URL, body=body, status=200)
+    album = fetch_album("https://vk.com/album-1_2", "tok", requests.Session(),
+                        DownloadConfig(retries=1))
+    assert album is not None
+    assert album.source == "api"
+    assert album.title == "album-1_2"
+    assert album.photos[0].id == "-1_2"
+    assert album.photos[0].urls == ["u_w", "u_m"]
+
+
+@responses.activate
 def test_fetch_album_retries_transient_network_failure():
     """The API source rides the network seam: transient drops are retried
     before the source passes to the next one."""

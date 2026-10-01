@@ -1,6 +1,6 @@
 """OPTIONAL VK API path. Used only when a token is present; None when it passes."""
 import requests
-from .models import Photo
+from .models import Album, Photo
 from .album_ref import parse as parse_album_ref
 from .config import DownloadConfig
 from .http import get as http_get
@@ -20,7 +20,7 @@ def photos_to_models(api_json: dict) -> list:
 
 
 def fetch_album(album_url: str, token: str, session, cfg: DownloadConfig = DownloadConfig()):
-    """Optional API source. Returns ``(photos, title)`` or ``None`` to pass.
+    """Optional API source. Returns an :class:`Album` or ``None`` to pass.
 
     ``None`` means "API unavailable/unusable, fall back to the next source".
     Only *expected* failures (URL shape, network, malformed API response) map to
@@ -45,4 +45,4 @@ def fetch_album(album_url: str, token: str, session, cfg: DownloadConfig = Downl
     photos = photos_to_models(data)
     if not photos:
         return None
-    return photos, f"album{owner}_{album}"
+    return Album(photos=photos, title=f"album{owner}_{album}", source="api")

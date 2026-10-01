@@ -15,7 +15,7 @@ import requests
 from .config import DownloadConfig, get_access_token
 from .downloader import download_all, sanitize_filename
 from .http import make_session
-from .resolver import resolve_album
+from .resolver import default_sources, resolve_album
 
 JobStatus = Literal["ok", "network_error", "empty"]
 
@@ -42,18 +42,17 @@ def download_album(album_url: str, *, max_workers: int = 5,
     cfg = DownloadConfig(max_workers=max_workers)
     start = time.perf_counter()
     try:
-        token = get_access_token()
-        photos, title = resolve_album(album_url, session, cfg, token=token,
-                                      sources=sources)
+        chain = sources if sources is not None else default_sources(get_access_token())
+        album = resolve_album(album_url, session, cfg, chain)
     except requests.RequestException as e:
         return DownloadReport(status="network_error", title=custom_title or "",
                               elapsed=time.perf_counter() - start, error=str(e))
-    if not photos:
-        return DownloadReport(status="empty", title=title,
+    if album is None or not album.photos:
+        return DownloadReport(status="empty", title=custom_title or "",
                               elapsed=time.perf_counter() - start)
-    folder = sanitize_filename(custom_title or title)
+    folder = sanitize_filename(custom_title or album.title)
     album_dir = Path(out_base) / folder
-    counters = download_all(photos, album_dir, session, cfg)
+    counters = download_all(album.photos, album_dir, session, cfg)
     return DownloadReport(status="ok", title=folder, album_dir=album_dir,
                           counters=counters,
                           elapsed=time.perf_counter() - start)

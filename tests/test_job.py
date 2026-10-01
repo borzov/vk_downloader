@@ -4,7 +4,7 @@ import requests
 import responses
 
 from vkdl.job import DownloadReport, download_album
-from vkdl.models import Photo
+from vkdl.models import Album, Photo
 
 IMG_A = "https://s/a.jpg?as=10x10&cs=10x0"
 IMG_B = "https://s/b.jpg?as=10x10&cs=10x0"
@@ -12,7 +12,7 @@ IMG_B = "https://s/b.jpg?as=10x10&cs=10x0"
 
 def _ok_source(photos, title="Job Title"):
     def source(album_url, session, cfg):
-        return photos, title
+        return Album(photos=photos, title=title, source="stub")
     return source
 
 
@@ -56,7 +56,7 @@ def test_network_failure_is_a_report_not_a_crash():
 
 def test_album_without_photos_reports_empty():
     report = download_album("https://vk.com/album-1_2",
-                            sources=[lambda *a: ([], "Private")])
+                            sources=[lambda *a: None])
     assert report.status == "empty"
     assert report.ok is False
 

@@ -64,6 +64,16 @@ def test_scrape_album_survives_transient_ajax_failure():
                   body=requests.exceptions.ConnectionError("drop"))
     responses.add(responses.POST, url, body=AJAX_PAGE, status=200)
     cfg = DownloadConfig(retries=2, backoff_base=0, rate_limit_delay=0)
-    photos, title = scrape_album(url, requests.Session(), cfg)
-    assert title == "Two"
-    assert [p.id for p in photos] == ["-1_99", "-1_100"]
+    album = scrape_album(url, requests.Session(), cfg)
+    assert album is not None
+    assert album.source == "scraper"
+    assert album.title == "Two"
+    assert [p.id for p in album.photos] == ["-1_99", "-1_100"]
+
+
+@responses.activate
+def test_scrape_album_returns_none_when_nothing_parsed():
+    url = "https://vk.com/album-1_2"
+    responses.add(responses.GET, url, body="<div>login wall</div>", status=200)
+    cfg = DownloadConfig(retries=1)
+    assert scrape_album(url, requests.Session(), cfg) is None

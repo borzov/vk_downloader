@@ -6,3 +6,11 @@ from dataclasses import dataclass
 class Photo:
     id: str
     urls: list
+
+
+@dataclass(frozen=True)
+class Album:
+    """What every source produces: photos plus the album's title."""
+    photos: list
+    title: str
+    source: str  # which adapter produced it: "api" | "scraper"
