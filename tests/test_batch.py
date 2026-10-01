@@ -1,3 +1,5 @@
+import pytest
+
 from vkdl.batch import parse_csv
 
 
@@ -28,5 +30,6 @@ def test_parse_csv_skips_incomplete_rows(tmp_path):
     assert parse_csv(str(f)) == []
 
 
-def test_parse_csv_missing_file():
-    assert parse_csv("/no/such/file.csv") == []
+def test_parse_csv_missing_file_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        parse_csv(str(tmp_path / "nope.csv"))
