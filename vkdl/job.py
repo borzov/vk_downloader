@@ -14,6 +14,7 @@ import requests
 
 from .config import DownloadConfig, get_access_token
 from .downloader import download_all, sanitize_filename
+from .http import make_session
 from .resolver import resolve_album
 
 JobStatus = Literal["ok", "network_error", "empty"]
@@ -37,7 +38,7 @@ def download_album(album_url: str, *, max_workers: int = 5,
                    custom_title: str = None, out_base: Path = Path("."),
                    sources=None) -> DownloadReport:
     """Run one download job and report the complete outcome."""
-    session = requests.Session()
+    session = make_session()
     cfg = DownloadConfig(max_workers=max_workers)
     start = time.perf_counter()
     try:

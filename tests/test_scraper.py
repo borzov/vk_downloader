@@ -1,5 +1,10 @@
 import json
-from vkdl.scraper import parse_photos, parse_album_meta, extract_ajax_html
+
+import requests
+import responses
+
+from vkdl.config import DownloadConfig
+from vkdl.scraper import parse_photos, parse_album_meta, extract_ajax_html, scrape_album
 
 ROW = (
     '<div class="photos_row" data-id="-1_99" '
@@ -9,6 +14,15 @@ PAGE = (
     '<div class="photos_album_intro"><h1>My Album</h1></div>'
     '<div class="ui_crumb_count">155</div>' + ROW
 )
+PAGE_TOTAL_2 = (
+    '<div class="photos_album_intro"><h1>Two</h1></div>'
+    '<div class="ui_crumb_count">2</div>' + ROW
+)
+AJAX_ROW = (
+    '<div class="photos_row" data-id="-1_100" '
+    'style="background-image:url(https://s/q.jpg?as=100x75,800x600&cs=100x0)"></div>'
+)
+AJAX_PAGE = json.dumps({"payload": [0, [80, AJAX_ROW]]})
 
 
 def test_parse_photos_extracts_id_and_urls():
@@ -38,3 +52,18 @@ def test_extract_ajax_html_finds_fragment():
 
 def test_extract_ajax_html_bad_json_returns_none():
     assert extract_ajax_html("not json") is None
+
+
+@responses.activate
+def test_scrape_album_survives_transient_ajax_failure():
+    """Pagination rides the network seam: a dropped AJAX page is retried,
+    not fatal for the whole album."""
+    url = "https://vk.com/album-1_2"
+    responses.add(responses.GET, url, body=PAGE_TOTAL_2, status=200)
+    responses.add(responses.POST, url,
+                  body=requests.exceptions.ConnectionError("drop"))
+    responses.add(responses.POST, url, body=AJAX_PAGE, status=200)
+    cfg = DownloadConfig(retries=2, backoff_base=0, rate_limit_delay=0)
+    photos, title = scrape_album(url, requests.Session(), cfg)
+    assert title == "Two"
+    assert [p.id for p in photos] == ["-1_99", "-1_100"]

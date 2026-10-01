@@ -1,31 +1,16 @@
-"""Threaded photo download with retry/backoff and SHA256 dedup."""
+"""Threaded photo download with SHA256 dedup."""
 import re
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 import requests
-from .config import HEADERS, DownloadConfig
+from .config import DownloadConfig
 from .dedup import DedupIndex, file_sha256
+from .http import get as http_get
 from .quality import guess_extension
 
 
 def sanitize_filename(name: str) -> str:
     return re.sub(r'[<>:"/\\|?*]', "_", name)
-
-
-def _get_with_retry(session, url, cfg):
-    last = None
-    for attempt in range(cfg.retries):
-        try:
-            r = session.get(url, headers=HEADERS, stream=True, timeout=cfg.request_timeout)
-            if r.status_code == 404:
-                return r
-            r.raise_for_status()
-            return r
-        except requests.RequestException as e:
-            last = e
-            time.sleep(cfg.backoff_base * (2 ** attempt))
-    raise last if last else requests.RequestException("unknown")
 
 
 def download_photo(photo, idx: int, album_dir: Path, session, cfg: DownloadConfig,
@@ -41,7 +26,7 @@ def download_photo(photo, idx: int, album_dir: Path, session, cfg: DownloadConfi
     last_error = "all URLs failed"
     for url in photo.urls:
         try:
-            r = _get_with_retry(session, url, cfg)
+            r = http_get(session, url, cfg, stream=True)
             if r.status_code == 404:
                 continue
             tmp = filepath.with_suffix(filepath.suffix + ".tmp")

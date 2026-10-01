@@ -3,6 +3,7 @@ import requests
 from .models import Photo
 from .album_ref import parse as parse_album_ref
 from .config import DownloadConfig
+from .http import get as http_get
 
 API_VERSION = "5.199"
 
@@ -30,11 +31,12 @@ def fetch_album(album_url: str, token: str, session, cfg: DownloadConfig = Downl
         return None
     owner, album = ref.owner_id, ref.album_id
     try:
-        r = session.get("https://api.vk.com/method/photos.get", params={
-            "owner_id": owner, "album_id": album, "count": 1000,
-            "photo_sizes": 1, "access_token": token, "v": API_VERSION,
-        }, timeout=cfg.request_timeout)
-        r.raise_for_status()
+        r = http_get(session, "https://api.vk.com/method/photos.get", cfg,
+                     params={
+                         "owner_id": owner, "album_id": album, "count": 1000,
+                         "photo_sizes": 1, "access_token": token,
+                         "v": API_VERSION,
+                     }, headers={"Accept": "application/json"})
         data = r.json()
     except (requests.RequestException, ValueError):
         return None

@@ -1,4 +1,13 @@
-from vkdl.api_client import photos_to_models
+import json
+
+import requests
+import responses
+
+from vkdl.api_client import fetch_album, photos_to_models
+from vkdl.config import DownloadConfig
+
+API_URL = "https://api.vk.com/method/photos.get"
+
 
 def test_photos_to_models_picks_largest():
     api = {"response": {"items": [
@@ -13,5 +22,23 @@ def test_photos_to_models_picks_largest():
     assert photos[0].urls[0] == "u_w"  # largest by width first
     assert photos[0].id == "-5_1"
 
+
 def test_photos_to_models_empty():
     assert photos_to_models({"response": {"items": []}}) == []
+
+
+@responses.activate
+def test_fetch_album_retries_transient_network_failure():
+    """The API source rides the network seam: transient drops are retried
+    before the source passes to the next one."""
+    for _ in range(2):
+        responses.add(responses.GET, API_URL,
+                      body=requests.exceptions.ConnectionError("down"))
+    responses.add(responses.GET, API_URL,
+                  body=json.dumps({"error": {"error_msg": "no access"}}),
+                  status=200)
+    cfg = DownloadConfig(retries=3, backoff_base=0)
+    result = fetch_album("https://vk.com/album-1_2", "tok", requests.Session(),
+                         cfg)
+    assert result is None              # API-level error -> pass to next source
+    assert len(responses.calls) == 3   # retried before giving up

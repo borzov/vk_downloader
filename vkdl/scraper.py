@@ -4,7 +4,8 @@ import time
 from bs4 import BeautifulSoup
 from .models import Photo
 from .quality import extract_quality_urls
-from .config import HEADERS, DownloadConfig
+from .config import DownloadConfig
+from .http import get as http_get, post as http_post
 
 
 def parse_photos(html: str) -> list:
@@ -47,19 +48,17 @@ def extract_ajax_html(ajax_json_text: str) -> str | None:
 
 
 def scrape_album(album_url: str, session, cfg: DownloadConfig = DownloadConfig()) -> tuple:
-    resp = session.get(album_url, headers=HEADERS, timeout=cfg.request_timeout)
-    resp.raise_for_status()
+    resp = http_get(session, album_url, cfg)
     title, total = parse_album_meta(resp.text)
     photos = list(parse_photos(resp.text))
 
     offset = len(photos)
-    ajax_headers = {**HEADERS, "Content-Type": "application/x-www-form-urlencoded",
+    ajax_headers = {"Content-Type": "application/x-www-form-urlencoded",
                     "X-Requested-With": "XMLHttpRequest", "Accept": "*/*",
                     "Origin": "https://vk.com", "Referer": album_url}
     while offset < total:
         data = {"al": "1", "offset": str(offset), "part": "1", "rev": ""}
-        ar = session.post(album_url, data=data, headers=ajax_headers, timeout=cfg.request_timeout)
-        ar.raise_for_status()
+        ar = http_post(session, album_url, cfg, data=data, headers=ajax_headers)
         html = extract_ajax_html(ar.text)
         if not html:
             break
