@@ -9,7 +9,6 @@ def test_default_download_config():
     c = config.DownloadConfig()
     assert c.max_workers == 5
     assert c.retries == 3
-    assert c.ajax_page_size == 40
 
 def test_get_access_token_absent(monkeypatch):
     monkeypatch.delenv("VK_ACCESS_TOKEN", raising=False)

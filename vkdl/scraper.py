@@ -47,13 +47,12 @@ def extract_ajax_html(ajax_json_text: str) -> str | None:
     return None
 
 
-def scrape_album(album_url: str, session,
-                 cfg: DownloadConfig = DownloadConfig()):
-    resp = http_get(session, album_url, cfg)
-    title, total = parse_album_meta(resp.text)
-    photos = list(parse_photos(resp.text))
+def _ajax_photo_pages(session, album_url, cfg, total, offset):
+    """Yield lists of new photos from AJAX pages until ``total`` is reached.
 
-    offset = len(photos)
+    The offset advances by the rows each page actually contains; an
+    unparseable or empty page ends pagination.
+    """
     ajax_headers = {"Content-Type": "application/x-www-form-urlencoded",
                     "X-Requested-With": "XMLHttpRequest", "Accept": "*/*",
                     "Origin": "https://vk.com", "Referer": album_url}
@@ -62,13 +61,23 @@ def scrape_album(album_url: str, session,
         ar = http_post(session, album_url, cfg, data=data, headers=ajax_headers)
         html = extract_ajax_html(ar.text)
         if not html:
-            break
+            return
         new = parse_photos(html)
         if not new:
-            break
-        photos.extend(new)
-        offset = len(photos)
+            return
+        yield new
+        offset += len(new)
         time.sleep(cfg.rate_limit_delay)
+
+
+def scrape_album(album_url: str, session,
+                 cfg: DownloadConfig = DownloadConfig()):
+    """Scraper source: parse the first page, fold the AJAX pages in."""
+    resp = http_get(session, album_url, cfg)
+    title, total = parse_album_meta(resp.text)
+    photos = list(parse_photos(resp.text))
+    for new in _ajax_photo_pages(session, album_url, cfg, total, len(photos)):
+        photos.extend(new)
     if not photos:
         return None
     return Album(photos=photos, title=title, source="scraper")

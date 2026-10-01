@@ -23,7 +23,6 @@ class DownloadConfig:
     retries: int = 3
     backoff_base: float = 0.5
     rate_limit_delay: float = 0.5
-    ajax_page_size: int = 40
 
 
 def get_access_token() -> str | None:
