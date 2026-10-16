@@ -6,7 +6,7 @@ Both URL validation (CLI) and owner/album extraction (API source) go through
 import re
 from dataclasses import dataclass
 
-_ALBUM_URL_RE = re.compile(r"https?://vk\.com/album(-?\d+)_(\d+)")
+_ALBUM_URL_RE = re.compile(r"https?://vk\.(?:com|ru)/album(-?\d+)_(\d+)")
 
 
 @dataclass(frozen=True)
